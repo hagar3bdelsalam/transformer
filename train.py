@@ -48,10 +48,14 @@ def get_or_build_tokenizer(config, ds, lang):
 
 
 def get_ds(config):
-    ds_raw = load_dataset("oddadmix/egyptian-arabic-english-translation-50k", split="train")
+    ds_raw = load_dataset("IbrahimAmin/arz-en-parallel-corpus")
 
-    tokenizer_src =  get_or_build_tokenizer(config=config, ds=ds_raw, lang=config["lang_src"])
-    tokenizer_tgt =  get_or_build_tokenizer(config=config, ds=ds_raw, lang=config["lang_tgt"])
+    train_ds_raw = ds_raw["train"]
+    val_ds_raw = ds_raw["test"]
+
+    # build tokenizers from train split 
+    tokenizer_src =  get_or_build_tokenizer(config=config, ds=train_ds_raw, lang=config["lang_src"])
+    tokenizer_tgt =  get_or_build_tokenizer(config=config, ds=train_ds_raw, lang=config["lang_tgt"])
 
     def fits(item): 
         src_len = len(tokenizer_src.encode(item[config['lang_src']]).ids)
@@ -59,16 +63,14 @@ def get_ds(config):
 
         return src_len <= config['seq_len'] - 2 and tgt_len <= config['seq_len'] - 1
 
-    before = len(ds_raw)
-    ds_raw = ds_raw.filter(fits)
-    after = len(ds_raw)
-    print(f"Filtered dataset: kept {after} of {before} rows ({before - after} removed as too long)")
+    before_train = len(train_ds_raw)
+    train_ds_raw = train_ds_raw.filter(fits)
+    print(f"Filtered train: kept {len(train_ds_raw)} of {before_train} rows ({before_train - len(train_ds_raw)} removed as too long)")
 
+    before_val = len(val_ds_raw)
+    val_ds_raw = val_ds_raw.filter(fits)
+    print(f"Filtered val: kept {len(val_ds_raw)} of {before_val} rows ({before_val - len(val_ds_raw)} removed as too long)")
 
-    # keep 90% for training and 10% for validation
-    train_ds_size = int(0.9 * len(ds_raw))
-    val_ds_size = len(ds_raw) - train_ds_size
-    train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
 
     train_ds = BillingualDataset(train_ds_raw, tokenizer_src, tokenizer_tgt, config["lang_src"], config["lang_tgt"], config["seq_len"])
     val_ds = BillingualDataset(val_ds_raw, tokenizer_src, tokenizer_tgt, config["lang_src"], config["lang_tgt"], config["seq_len"]) 
