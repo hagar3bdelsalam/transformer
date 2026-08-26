@@ -24,7 +24,7 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
     eos_idx = tokenizer_tgt.token_to_id('[EOS]')
 
     # precompute the encoder output and reuse it for every token we get from the decoder
-    encoder_output = model.encoder(source, source_mask)
+    encoder_output = model.encode(source, source_mask)
     # initialize the decoder input with the sos token
     decoder_input = torch.empty(1,1).fill_(sos_idx).type_as(source).to(device)
     while True:
