@@ -72,3 +72,4 @@ cache/
 *.key
 credentials.json
 secrets.json
+*.json
